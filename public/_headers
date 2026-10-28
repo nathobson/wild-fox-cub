@@ -1,0 +1,17 @@
+# Everything under /assets/ has its contents' hash in its name (the editor bundle,
+# and the published pages' copy of site.css), so browsers can keep it for a year.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Security headers for static files (the Worker adds them to everything else).
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000
+
+# The editor page is served as a static file, before the Worker runs, so its
+# headers live here. Keep the policy in step with EDITOR_CSP in worker/security.ts.
+/foxcub
+  X-Robots-Tag: noindex, nofollow
+  X-Frame-Options: DENY
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'

@@ -1,0 +1,946 @@
+/*
+ * The composer (src/site/comp/Composer.tsx): the editor's full-screen art board
+ * for story canvases. Loaded only while it's open.
+ */
+
+.cmp {
+  --ui: #f2f2f4;
+  --ui-2: rgb(242 242 244 / 0.62);
+  --ui-3: rgb(242 242 244 / 0.36);
+  --ui-line: rgb(255 255 255 / 0.09);
+  --ui-bg: #141518;
+  --ui-panel: #1b1c20;
+  --ui-raise: #25262b;
+  --sel: #ff7a1a;
+  --pin: #4cc2ff;
+
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: flex;
+  flex-direction: column;
+  background: var(--ui-bg);
+  color: var(--ui);
+  font: 13px/1.4 -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Segoe UI', sans-serif;
+  user-select: none;
+}
+
+/* Bars and buttons */
+
+.cmp-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: 52px;
+  padding: 0 14px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--ui-line);
+  background: var(--ui-panel);
+}
+
+.cmp-bar-group {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cmp-title {
+  margin-left: 8px;
+  color: var(--ui-2);
+}
+
+.cmp-sep {
+  width: 1px;
+  height: 20px;
+  margin: 0 6px;
+  background: var(--ui-line);
+}
+
+.cmp-btn {
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--ui-line);
+  border-radius: 8px;
+  background: var(--ui-raise);
+  color: var(--ui);
+  font: inherit;
+  cursor: pointer;
+}
+
+.cmp-btn:hover:not(:disabled) {
+  background: #303137;
+}
+
+.cmp-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.cmp-btn.primary {
+  border-color: transparent;
+  background: var(--sel);
+  color: #1a0b02;
+  font-weight: 600;
+}
+
+.cmp-btn.primary:hover {
+  background: #ff8f3d;
+}
+
+.cmp-btn.icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  padding: 0;
+  font-size: 16px;
+}
+
+.cmp-btn.zoom {
+  min-width: 58px;
+  padding: 0 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cmp-seg {
+  display: flex;
+  padding: 2px;
+  border-radius: 9px;
+  background: var(--ui-raise);
+}
+
+.cmp-seg button {
+  display: grid;
+  place-items: center;
+  min-width: 30px;
+  height: 26px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--ui-2);
+  font: inherit;
+  cursor: pointer;
+}
+
+.cmp-seg button.active {
+  background: #3a3b42;
+  color: var(--ui);
+}
+
+.cmp-check {
+  height: 26px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--ui-3);
+  font: inherit;
+  cursor: pointer;
+}
+
+.cmp-check.on {
+  color: var(--ui);
+  background: var(--ui-raise);
+}
+
+/* Layout */
+
+.cmp-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.cmp-side,
+.cmp-props {
+  flex: none;
+  overflow-y: auto;
+  background: var(--ui-panel);
+}
+
+.cmp-side {
+  width: 236px;
+  border-right: 1px solid var(--ui-line);
+}
+
+.cmp-props {
+  width: 300px;
+  border-left: 1px solid var(--ui-line);
+  user-select: text;
+}
+
+/* List items */
+
+.cmp-add {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--ui-2);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.cmp-add:hover {
+  background: var(--ui-raise);
+  color: var(--ui);
+}
+
+.cmp-layer-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.cmp-layer-thumb {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.cmp-empty {
+  margin: 0;
+  padding: 0 6px 6px;
+  color: var(--ui-3);
+}
+
+/* Stage and board */
+
+.cmp-stage {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  background:
+    radial-gradient(circle at 1px 1px, rgb(255 255 255 / 0.06) 1px, transparent 0) 0 0 / 22px 22px,
+    #0e0f11;
+}
+
+.cmp-paper {
+  position: relative;
+  margin: 0 auto;
+}
+
+.cmp-board-wrap {
+  position: absolute;
+  box-shadow: 0 30px 80px rgb(0 0 0 / 0.5), 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+
+.cmp-board.site-root {
+  position: absolute;
+  top: 0;
+  left: 0;
+  min-height: 0;
+  overflow: clip;
+  transform-origin: 0 0;
+  background: var(--night);
+}
+
+.cmp-board .wf-comp {
+  position: absolute;
+  inset: 0 0 auto;
+  margin-top: 0;
+}
+
+.cmp-board .wf-comp.phone-flow {
+  position: relative;
+}
+
+.tool-select .cmp-board {
+  cursor: default;
+}
+
+.tool-text .cmp-board {
+  cursor: text;
+}
+
+.tool-pen .cmp-board {
+  cursor: crosshair;
+}
+
+.cmp-bands,
+.cmp-screens,
+.cmp-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.cmp-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: clip;
+}
+
+.cmp-band picture {
+  display: contents;
+}
+
+/* One screen of photo, pinned while its band scrolls by, as on the live site. */
+.cmp-band-img {
+  position: sticky;
+  top: 0;
+  display: block;
+  width: 100%;
+  height: min(100%, var(--screen));
+  object-fit: cover;
+}
+
+.cmp-bands.dim {
+  opacity: 0.18;
+}
+
+.cmp-screen {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed rgb(255 255 255 / 0.22);
+}
+
+.cmp-grid div {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgb(255 92 92 / 0.07);
+  border-inline: 1px solid rgb(255 92 92 / 0.16);
+}
+
+.cmp-lines,
+.cmp-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.cmp-overlay {
+  z-index: 4;
+}
+
+.cmp-board .wf-comp {
+  z-index: 3;
+}
+
+.cmp-line {
+  fill: none;
+  stroke: rgb(243 241 236 / 0.82);
+  stroke-linecap: round;
+}
+
+.cmp-line-sel .cmp-line {
+  stroke: var(--sel);
+}
+
+.cmp-dot {
+  fill: rgb(243 241 236 / 0.92);
+}
+
+.cmp-hit {
+  fill: none;
+  stroke: transparent;
+  pointer-events: stroke;
+  cursor: pointer;
+}
+
+.tool-pen .cmp-hit,
+.tool-text .cmp-hit {
+  pointer-events: none;
+}
+
+/* Lines sit under the text, but stay easy to grab. */
+.cmp-lines {
+  z-index: 4;
+}
+
+.cmp-board .cmp-piece {
+  cursor: move;
+}
+
+.is-flow .cmp-piece {
+  cursor: pointer;
+}
+
+.tool-pen .cmp-piece,
+.tool-text .cmp-piece {
+  cursor: inherit;
+}
+
+.cmp-piece {
+  outline: 1px solid transparent;
+  outline-offset: calc(4px / var(--z));
+}
+
+.tool-select .cmp-piece:hover {
+  outline: calc(1px / var(--z)) solid rgb(255 122 26 / 0.5);
+}
+
+.cmp-piece.sel {
+  outline: calc(1.5px / var(--z)) solid var(--sel);
+}
+
+.cmp-piece.snap {
+  outline: calc(1.5px / var(--z)) solid var(--pin);
+}
+
+.cmp-board .wf-piece.offboard {
+  display: block !important;
+  opacity: 0.22;
+}
+
+.cmp-editing {
+  outline: none;
+  cursor: text;
+  user-select: text;
+  white-space: pre-wrap;
+  caret-color: var(--sel);
+}
+
+.cmp-resize {
+  position: absolute;
+  top: 50%;
+  width: calc(8px / var(--z));
+  height: calc(22px / var(--z));
+  margin-top: calc(-11px / var(--z));
+  border: calc(1.5px / var(--z)) solid var(--sel);
+  border-radius: calc(4px / var(--z));
+  background: #fff;
+  cursor: ew-resize;
+}
+
+.cmp-resize.l {
+  left: calc(-8px / var(--z));
+}
+
+.cmp-resize.r {
+  right: calc(-8px / var(--z));
+}
+
+.cmp-overlay [data-h] {
+  pointer-events: all;
+}
+
+.cmp-node {
+  fill: #fff;
+  stroke: var(--sel);
+  cursor: move;
+}
+
+.cmp-node.pinned {
+  stroke: var(--pin);
+}
+
+.cmp-node.active {
+  fill: var(--sel);
+}
+
+.cmp-node.pinned.active {
+  fill: var(--pin);
+}
+
+.cmp-stem {
+  stroke: var(--sel);
+  opacity: 0.7;
+}
+
+.cmp-handle {
+  fill: #141518;
+  stroke: var(--sel);
+  cursor: grab;
+}
+
+.cmp-guide {
+  stroke: #ff3df0;
+}
+
+.cmp-marquee {
+  fill: rgb(255 122 26 / 0.08);
+  stroke: var(--sel);
+}
+
+.cmp-pen-preview {
+  fill: none;
+  stroke: var(--sel);
+  stroke-dasharray: 4 4;
+}
+
+/* Story edges on the board */
+
+.cmp-edge line {
+  stroke: rgb(255 255 255 / 0.5);
+}
+
+.cmp-edge.sel line {
+  stroke: var(--sel);
+}
+
+.cmp-edge-pill {
+  cursor: ns-resize;
+  pointer-events: all;
+}
+
+.cmp-edge-pill rect {
+  fill: rgb(20 21 24 / 0.88);
+  stroke: rgb(255 255 255 / 0.18);
+}
+
+.cmp-edge.sel .cmp-edge-pill rect {
+  stroke: var(--sel);
+}
+
+.cmp-edge-pill text {
+  fill: var(--ui);
+  font: 500 11px -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+  pointer-events: none;
+}
+
+.cmp-story-sel {
+  outline: calc(1px / var(--z)) solid rgb(255 122 26 / 0.4);
+  outline-offset: calc(-1px / var(--z));
+}
+
+.cmp-piece.fixed {
+  cursor: pointer;
+}
+
+/* Beside the board */
+
+.cmp-gutter {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 142px;
+}
+
+.cmp-story-mark {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.cmp-story-label {
+  position: absolute;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 128px;
+  height: 28px;
+  margin-top: 6px;
+  padding: 0 8px 0 3px;
+  border: 1px solid var(--ui-line);
+  border-radius: 8px;
+  background: var(--ui-raise);
+  color: var(--ui);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  pointer-events: all;
+}
+
+.cmp-story-label span:last-child {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.cmp-story-mark.sel .cmp-story-label {
+  border-color: var(--sel);
+}
+
+.cmp-story-label picture {
+  display: contents;
+}
+
+.cmp-story-thumb {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  object-fit: cover;
+}
+
+.cmp-story-thumb.none,
+.cmp-layer-thumb.none {
+  display: inline-block;
+  border: 1px dashed var(--ui-3);
+  box-sizing: border-box;
+}
+
+.cmp-fade {
+  position: absolute;
+  right: 4px;
+  width: 3px;
+  border-radius: 2px;
+  background: linear-gradient(transparent, var(--ui-2));
+  cursor: ns-resize;
+  pointer-events: all;
+}
+
+.cmp-fade::before {
+  content: '';
+  position: absolute;
+  inset: -2px -8px;
+}
+
+.cmp-story-mark.sel .cmp-fade {
+  background: linear-gradient(transparent, var(--sel));
+}
+
+.cmp-tick {
+  position: absolute;
+  right: 0;
+  width: 8px;
+  border-top: 1px solid var(--ui-3);
+}
+
+/* Story list */
+
+.cmp-tree {
+  padding: 12px 10px;
+}
+
+.cmp-tree header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px 8px;
+  font-weight: 600;
+  color: var(--ui-2);
+}
+
+.cmp-tree ol,
+.cmp-tree ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cmp-tree ol > li {
+  margin-bottom: 4px;
+  border-radius: 8px;
+}
+
+.cmp-tree ol > li.over {
+  box-shadow: inset 0 2px 0 var(--sel);
+}
+
+.cmp-tree ol > li.dragging {
+  opacity: 0.4;
+}
+
+.cmp-tree-story {
+  display: flex;
+  align-items: center;
+  border-radius: 7px;
+}
+
+.cmp-tree-story.active {
+  background: rgb(255 122 26 / 0.18);
+}
+
+.cmp-tree-story:hover:not(.active) {
+  background: rgb(255 255 255 / 0.05);
+}
+
+.cmp-chevron {
+  flex: none;
+  width: 20px;
+  height: 30px;
+  border: 0;
+  background: none;
+  color: var(--ui-3);
+  font-size: 15px;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.cmp-chevron.open {
+  transform: rotate(90deg);
+}
+
+.cmp-tree-name {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 30px;
+  padding: 0 6px 0 0;
+  border: 0;
+  background: none;
+  color: var(--ui);
+  font: inherit;
+  font-weight: 500;
+  text-align: left;
+  cursor: grab;
+}
+
+.cmp-tree ul {
+  margin: 2px 0 6px 20px;
+}
+
+.cmp-tree ul button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 26px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--ui-2);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cmp-tree ul button:hover {
+  background: rgb(255 255 255 / 0.05);
+  color: var(--ui);
+}
+
+.cmp-tree ul button.active {
+  background: rgb(255 122 26 / 0.18);
+  color: var(--ui);
+}
+
+.cmp-kind {
+  flex: none;
+  width: 14px;
+  color: var(--ui-3);
+  font-size: 11px;
+  text-align: center;
+}
+
+.cmp-tree .cmp-empty {
+  padding: 4px 6px;
+  font-size: 12px;
+}
+
+.cmp-layer-thumb.carried {
+  opacity: 0.4;
+}
+
+.cmp-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+/* Properties */
+
+.cmp-panel {
+  padding: 16px 14px 24px;
+}
+
+.cmp-panel h3 {
+  margin: 0 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cmp-panel .row {
+  margin-bottom: 10px;
+}
+
+.cmp-sub {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--ui-line);
+}
+
+.cmp-sub h4 {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ui-2);
+}
+
+.cmp-sub .wide-btn {
+  margin-top: 6px;
+}
+
+.cmp-nums {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 4px 0 12px;
+}
+
+.cmp-num {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--ui-line);
+  border-radius: 8px;
+  background: var(--ui-raise);
+}
+
+.cmp-num span {
+  color: var(--ui-3);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.cmp-num input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: none;
+  color: var(--ui);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+}
+
+.cmp-actions {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.cmp-actions .danger {
+  color: #ff8a80;
+}
+
+.cmp-hint {
+  margin: 12px 0 0;
+  color: var(--ui-3);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.cmp-keys {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.cmp-keys dt {
+  color: var(--ui);
+  font-variant-numeric: tabular-nums;
+}
+
+.cmp-keys dd {
+  margin: 0;
+  color: var(--ui-3);
+}
+
+/* Preview */
+
+.cmp-preview {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  background: #0b0b0c;
+}
+
+.cmp-preview-stage {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  padding: 18px;
+}
+
+.cmp-preview-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 10px;
+  background: #09090a;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+
+.cmp-preview-frame.phone {
+  width: 390px;
+  max-height: 844px;
+  border-radius: 28px;
+  box-shadow: 0 0 0 8px #222, 0 30px 80px rgb(0 0 0 / 0.6);
+}
+
+/* Reading order badges */
+
+.cmp-order {
+  pointer-events: none;
+}
+
+.cmp-order circle {
+  fill: var(--pin);
+  stroke: #0e0f11;
+  stroke-width: 1.5;
+}
+
+.cmp-order.line circle {
+  fill: #fff;
+}
+
+.cmp-order text {
+  fill: #06131c;
+  font: 700 10px -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+}
+
+/* A story's hold: the stretch of scrolling it stays pinned for */
+
+.cmp-hold > rect {
+  fill: rgb(76 194 255 / 0.07);
+}
+
+.cmp-hold text {
+  fill: var(--pin);
+  font: 500 11px -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+  pointer-events: none;
+}
+
+.cmp-edge .cmp-edge-content {
+  stroke: rgb(76 194 255 / 0.5);
+  stroke-dasharray: 4 4;
+}
+
+/* A camera story's beats: where each stop's screen starts. */
+.cmp-beat line {
+  stroke: rgb(255 214 120 / 0.7);
+  stroke-dasharray: 6 6;
+  vector-effect: non-scaling-stroke;
+}
+
+.cmp-beat text {
+  fill: rgb(255 214 120 / 0.9);
+  font: 600 11px/1 var(--sans, system-ui);
+}
+
+.cmp-x {
+  margin-left: 6px;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 0.08);
+  color: inherit;
+  cursor: pointer;
+}
+
+.cmp-band.paper {
+  background: var(--paper, #f2eee6);
+}

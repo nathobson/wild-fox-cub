@@ -1,0 +1,27 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "wild-fox-digital",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    // Built files (admin.html → /admin, /assets/*, /site.css) are served directly.
+    // Any other path falls through to the Worker: the API and the published site.
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "wild-fox-digital"
+      // No database_id needed: `wrangler deploy` creates the database on first deploy.
+    }
+  ],
+  // Uploaded images: originals plus pre-generated AVIF/WebP/JPEG sizes.
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "wild-fox-digital-media" }],
+  // Cloudflare Images, used once per upload to generate the sizes.
+  "images": { "binding": "IMAGES" },
+  // Contact form: at most 5 messages a minute per visitor IP. namespace_id is any
+  // number unique to this Worker within the Cloudflare account.
+  "ratelimits": [{ "name": "CONTACT_LIMITER", "namespace_id": "1001", "simple": { "limit": 5, "period": 60 } }],
+  "observability": { "enabled": true }
+}
