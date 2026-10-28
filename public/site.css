@@ -243,38 +243,6 @@ a.wf-button:hover {
   --hfg: #151513;
 }
 
-.wf-header::before,
-.wf-header::after {
-  content: '';
-  position: absolute;
-  inset: 0 0 -30px;
-  z-index: -1;
-  transition: opacity 0.8s var(--ease);
-  pointer-events: none;
-}
-
-.wf-header::before {
-  background: linear-gradient(180deg, rgb(9 9 10 / 0.4), rgb(9 9 10 / 0));
-}
-
-.wf-header::after {
-  background: linear-gradient(180deg, rgb(242 238 230 / 0.92) 35%, rgb(242 238 230 / 0));
-  opacity: 0;
-}
-
-.wf-header[data-tone='light']::before {
-  opacity: 0;
-}
-
-.wf-header[data-tone='light']::after {
-  opacity: 1;
-}
-
-/* Over the canvas the backgrounds crossfade under it, so a light header doesn't add its own. */
-.wf-header[data-over='canvas'][data-tone='light']::after {
-  opacity: 0;
-}
-
 .wf-header > * {
   pointer-events: auto;
 }

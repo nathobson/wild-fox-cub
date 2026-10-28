@@ -784,19 +784,14 @@
           var b = tn.getBoundingClientRect();
           if (b.top <= hy && b.bottom > hy) tone = tn.dataset.tone;
         });
-        var over = '';
         comps.forEach(function (cv) {
           // (Once its photo is framing out onto the light page, the page's tone applies.)
           if (cv.out > 0.3) {
             var c = cv.el.getBoundingClientRect();
             if (c.top <= hy && c.bottom > hy) tone = cv.end.dataset.tone || tone;
-          } else if (cv.box && cv.tone && cv.box.top <= hy && cv.box.bottom > hy) {
-            tone = cv.tone;
-            over = 'canvas';
-          }
+          } else if (cv.box && cv.tone && cv.box.top <= hy && cv.box.bottom > hy) tone = cv.tone;
         });
         if (tone) set(header, 'data-tone', tone);
-        set(header, 'data-over', over);
       }
       flush();
     }
